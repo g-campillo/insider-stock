@@ -1,7 +1,7 @@
 from bs4 import BeautifulSoup
 from requests import get as GET
 
-class OpenInsiderParser:
+class OpenInsider:
     
     def __init__(self, set_purchases=1, sortcol=1, cnt=100):
         self.URL = 'http://openinsider.com/screener'
@@ -49,3 +49,7 @@ class OpenInsiderParser:
                 }
                 res.append(filtered_data)
         return res
+
+if __name__ == '__main__':
+    o = OpenInsider()
+    print(o.get_records())
