@@ -6,7 +6,7 @@ const morgan = require('morgan');
 const db = require('./helpers/database');
 require('dotenv').config();
 
-const PORT = 8000;
+const PORT = process.env.SERVER_PORT;
 const app = express();
 
 app.use(helmet());
