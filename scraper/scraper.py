@@ -1,12 +1,27 @@
-import sys
+import os
+from time import sleep
+from argparse import ArgumentParser
 
 from bs4 import BeautifulSoup
 from requests import get as GET
+from requests import post as POST
 
 class Scraper:
     
     # The default parameters gets the last 100 purchases sorted by the trade date
-    def __init__(self, fd=730, td=0, xp=1, sic1=-1, sicl=100, sich=9999, grp=0, sortcol=1, cnt=100, page=1):
+    def __init__(self, 
+                fd=730, 
+                td=0, 
+                xp=1, 
+                sic1=-1, 
+                sicl=100, 
+                sich=9999, 
+                grp=0, 
+                sortcol=1, 
+                cnt=100, 
+                page=1,
+                sleep_interval=300):
+        
         self.URL = "http://openinsider.com/screener"
         self.QUERY_PARAMS = {
             "fd": fd,
@@ -22,6 +37,8 @@ class Scraper:
         }
         
         self.HTML = None
+        
+        self.SLEEP_INTERVAL = sleep_interval
     
     # Just in case the request fails
     def _make_request(self):
@@ -59,11 +76,23 @@ class Scraper:
             return agg_data
         except:
             print("There was an error aggregating the data")
+    
+    # sends the newly collected data to the api to store it in the database
+    def post_data(self, data):
+        pass
+    
+    def run(self):
+        while True:
+            self.post_data(self.parse_data())
+            print(f'Sleeping {self.SLEEP_INTERVAL}s')
+            sleep(self.SLEEP_INTERVAL)
 
-
-
-if __name__ == '__main__':
-    scraper = Scraper()
-    data = scraper.parse_data()
-    for item in data:
-        print(item)
+if __name__ == "__main__":
+    parser = ArgumentParser()
+    parser.add_argument("--sleep-interval", type=int, required=False, help="The amount of seconds to sleep after each run")
+    
+    args = parser.parse_args()
+    
+    Scraper(
+        sleep_interval=args.sleep_interval or 300
+    ).run()
