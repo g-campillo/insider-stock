@@ -15,9 +15,6 @@ app.use(cors());
 app.use(morgan('combined'));
 
 
-
-// GET Methods
-
 // Gets records from trades table
 app.get('/records', async function (req, res) {
     let records = await db.getRecords(req.query.limit || 100);
