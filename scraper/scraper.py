@@ -5,6 +5,7 @@ from argparse import ArgumentParser
 from bs4 import BeautifulSoup
 from requests import get as GET
 from requests import post as POST
+from dotenv import load_dotenv
 
 class Scraper:
     
@@ -22,7 +23,7 @@ class Scraper:
                 page=1,
                 sleep_interval=300):
         
-        self.URL = "http://openinsider.com/screener"
+        self.URL = os.environ.get("STOCK_URL")
         self.QUERY_PARAMS = {
             "fd": fd,
             "td": td,
@@ -39,6 +40,9 @@ class Scraper:
         self.HTML = None
         
         self.SLEEP_INTERVAL = sleep_interval
+        print(os.environ.get('API_URL'))
+        
+        self.API_URL = os.environ.get("API_URL")
     
     # Just in case the request fails
     def _make_request(self):
@@ -67,11 +71,11 @@ class Scraper:
                     "insider_name": table_data[5].findChildren("a")[0].string,
                     "insider_title": table_data[6].string,
                     "trade_type": table_data[7].string,
-                    "price": table_data[8].string,
-                    "qty": table_data[9].string,
-                    "owned": table_data[10].string,
-                    "delta_own": table_data[11].string,
-                    "value": table_data[12].string
+                    "price": table_data[8].string.replace("$", ""),
+                    "qty": table_data[9].string.replace("+", "").replace(",", ""),
+                    "owned": table_data[10].string.replace(",", ""),
+                    "delta_own": table_data[11].string.replace("+", "").replace("%", ""),
+                    "value": table_data[12].string.replace("+", "").replace("$", "").replace(",", "")
                 }
                 agg_data.append(data)
             return agg_data
@@ -80,7 +84,7 @@ class Scraper:
     
     # sends the newly collected data to the api to store it in the database
     def post_data(self, data):
-        pass
+        POST(f"{self.API_URL}/scraper/add", json=data)
     
     def run(self):
         while True:
@@ -88,6 +92,7 @@ class Scraper:
             sleep(self.SLEEP_INTERVAL)
 
 if __name__ == "__main__":
+    load_dotenv()
     parser = ArgumentParser()
     parser.add_argument("--sleep-interval", type=int, required=False, help="The amount of seconds to sleep after each run")
     
