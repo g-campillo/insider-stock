@@ -1,0 +1,10 @@
+version: "3"
+services:
+  api:
+    build: .
+    container_name: ScraperAPI
+    command: npm run api
+    volumes:
+      - ./:/app
+    ports:
+      - ${SERVER_PORT}:${SERVER_PORT}

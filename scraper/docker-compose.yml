@@ -2,7 +2,7 @@ version: "3"
 services:
   web_scraper:
     build: .
-    container_name: WebScraper
+    container_name: Scraper
     command: python scraper.py
     volumes:
     - ./:/app
