@@ -45,7 +45,8 @@ class Scraper:
         try:
             return GET(self.URL, params=self.QUERY_PARAMS)
         except:
-            print('There was an error making the request')
+            # Add debug logging here
+            pass
     
     def parse_data(self):
         
@@ -84,7 +85,6 @@ class Scraper:
     def run(self):
         while True:
             self.post_data(self.parse_data())
-            print(f'Sleeping {self.SLEEP_INTERVAL}s')
             sleep(self.SLEEP_INTERVAL)
 
 if __name__ == "__main__":
