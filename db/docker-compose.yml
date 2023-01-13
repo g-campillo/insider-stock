@@ -1,15 +1,14 @@
 version: "3"
 services:
   db:
-    container_name: db
-    image: postgres:15
-    environment:
-      - POSTGRES_DB=${DB_NAME}
-      - POSTGRES_USER=${DB_USER}
-      - POSTGRES_PASSWORD=${DB_PASSWORD}
+    container_name: ScraperDB
+    image: mysql:8
     ports:
-      - "5432:5432"
+      - "6000:3306"
+    environment:
+      - MYSQL_DATABSE=${DB_NAME}
+      - MYSQL_ROOT_PASSWORD=${DB_PASSWORD}
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - ScraperDBVol:/var/lib/mysql
 volumes:
-  pgdata:
+  ScraperDBVol:
