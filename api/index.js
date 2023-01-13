@@ -12,11 +12,8 @@ app.use(bodyParser.json());
 app.use(cors());
 app.use(morgan('combined'));
 
-app.get('/', (req, res) => {
-    res.send({
-        good: "job"
-    });
-});
+const scraper = require('./routes/scraper.js');
+app.use('/scraper', scraper);
 
 app.listen(PORT, () => {
     console.log(`Listening on port ${PORT}`);
