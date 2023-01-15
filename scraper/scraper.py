@@ -3,9 +3,12 @@ from time import sleep
 from argparse import ArgumentParser
 
 from bs4 import BeautifulSoup
+from dotenv import load_dotenv
 from requests import get as GET
 from requests import post as POST
-from dotenv import load_dotenv
+from sqlalchemy import create_engine
+
+from orm import Trades
 
 class Scraper:
     
@@ -40,7 +43,6 @@ class Scraper:
         self.HTML = None
         
         self.SLEEP_INTERVAL = sleep_interval
-        print(os.environ.get('API_URL'))
         
         self.API_URL = os.environ.get("API_URL")
     
@@ -93,6 +95,15 @@ class Scraper:
 
 if __name__ == "__main__":
     load_dotenv()
+    
+    db_host = os.environ.get("DB_HOST")
+    db_user = os.environ.get("DB_USER")
+    db_password = os.environ.get("DB_PASSWORD")
+    db_port = os.environ.get("DB_PORT")
+    db_name = os.environ.get("DATABASE")
+    
+    engine = create_engine(f"mysql://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}")
+    
     parser = ArgumentParser()
     parser.add_argument("--sleep-interval", type=int, required=False, help="The amount of seconds to sleep after each run")
     
@@ -100,4 +111,4 @@ if __name__ == "__main__":
     
     Scraper(
         sleep_interval=args.sleep_interval or 300
-    ).run()
+    )#.run()
