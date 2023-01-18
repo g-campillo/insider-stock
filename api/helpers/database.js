@@ -15,7 +15,7 @@ const sqlPool = mysql.createPool({
 const promisePool = sqlPool.promise();
 
 async function getRecords(limit) { 
-    let query = `SELECT * FROM trades LIMIT ${limit}`;
+    let query = `SELECT * FROM trades LIMIT ${limit} ORDER BY tradeDate DESC, filingDate DESC`;
     let [records, fields] = await promisePool.query(query)
     return records;
 }
