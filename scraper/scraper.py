@@ -1,14 +1,15 @@
 import os
+import logging as log
 from time import sleep
 from argparse import ArgumentParser
 
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
 from requests import get as GET
-from requests import post as POST
-from sqlalchemy import create_engine
+from sqlalchemy.exc import IntegrityError
 
 from orm import Trades
+from orm import session
 
 class Scraper:
     
@@ -26,7 +27,6 @@ class Scraper:
                 page=1,
                 sleep_interval=300):
         
-        self.URL = os.environ.get("STOCK_URL")
         self.QUERY_PARAMS = {
             "fd": fd,
             "td": td,
@@ -41,22 +41,29 @@ class Scraper:
         }
         
         self.HTML = None
-        
         self.SLEEP_INTERVAL = sleep_interval
-        
-        self.API_URL = os.environ.get("API_URL")
+        self.URL = os.environ.get("STOCK_URL")
     
     # Just in case the request fails
     def _make_request(self):
         try:
+            log.info("Requesting HTML page")
             return GET(self.URL, params=self.QUERY_PARAMS)
-        except:
-            # Add debug logging here
-            pass
+        except Exception as e:
+            log.error("Error making GET request for HTML page")
+            log.debug(msg=e, exc_info=True)
     
-    def parse_data(self):
+    def _clean_string(self, text):
+        return text \
+                .replace("$", "") \
+                .replace(",", "") \
+                .replace("+", "") \
+                .replace("%", "")
+    
+    def get_data(self):
         
         try:
+            log.info("Getting data")
             self.HTML = BeautifulSoup(self._make_request().text, "html.parser")
             data_rows = self.HTML.findAll("tbody")[1].findChildren("tr")
             
@@ -65,44 +72,57 @@ class Scraper:
             for row in data_rows:
                 table_data = row.findChildren("td")
                 
-                data = {
-                    "filing_date": table_data[1].findChildren("a")[0].string,
-                    "trade_date": table_data[2].findChildren("div")[0].string,
-                    "ticker": table_data[3].findChildren("a")[0].string,
-                    "company_name": table_data[4].findChildren("a")[0].string,
-                    "insider_name": table_data[5].findChildren("a")[0].string,
-                    "insider_title": table_data[6].string,
-                    "trade_type": table_data[7].string,
-                    "price": table_data[8].string.replace("$", ""),
-                    "qty": table_data[9].string.replace("+", "").replace(",", ""),
-                    "owned": table_data[10].string.replace(",", ""),
-                    "delta_own": table_data[11].string.replace("+", "").replace("%", ""),
-                    "value": table_data[12].string.replace("+", "").replace("$", "").replace(",", "")
-                }
-                agg_data.append(data)
+                data_obj = Trades(
+                    filing_date=self._clean_string(table_data[1].findChildren("a")[0].string),
+                    trade_date=self._clean_string(table_data[2].findChildren("div")[0].string),
+                    ticker=self._clean_string(table_data[3].findChildren("a")[0].string),
+                    company_name=self._clean_string(table_data[4].findChildren("a")[0].string),
+                    insider_name=self._clean_string(table_data[5].findChildren("a")[0].string),
+                    insider_title=self._clean_string(table_data[6].string),
+                    trade_type=self._clean_string(table_data[7].string),
+                    price=self._clean_string(table_data[8].string),
+                    qty=self._clean_string(table_data[9].string),
+                    owned=self._clean_string(table_data[10].string),
+                    delta_owned= 0 if self._clean_string(table_data[11].string) == "New" else self._clean_string(table_data[11].string),
+                    value=self._clean_string(table_data[12].string)
+                )
+                agg_data.append(data_obj)
+            log.debug(f"Data gathered: {agg_data}")
             return agg_data
-        except:
-            print("There was an error aggregating the data")
+        except Exception as e:
+            log.error("There was an error collecting the data from the site")
+            log.debug(msg=e, exc_info=True)
     
-    # sends the newly collected data to the api to store it in the database
-    def post_data(self, data):
-        POST(f"{self.API_URL}/scraper/add", json=data)
+    # stores data directly to the database
+    def upload_data(self, data):    
+        try:
+            log.info("Uploading data to the database...")
+            session.add_all(data)
+            session.commit()
+            log.info("Data successfully uploaded to the database")
+        except IntegrityError as e:
+            log.warning("Duplicate data is being entered, dismissing")
+            pass
+        except Exception as e:
+            log.error("An error occurred during data upload")
+            log.debug(msg=e, exc_info=True)
     
     def run(self):
-        while True:
-            self.post_data(self.parse_data())
-            sleep(self.SLEEP_INTERVAL)
+        try:
+            while True:
+                self.upload_data(self.get_data())
+                sleep(self.SLEEP_INTERVAL)
+        except Exception as e:
+            log.error("An error occurred in the main loop")
+            log.debug(msg=e, exc_info=True)
 
 if __name__ == "__main__":
     load_dotenv()
     
-    db_host = os.environ.get("DB_HOST")
-    db_user = os.environ.get("DB_USER")
-    db_password = os.environ.get("DB_PASSWORD")
-    db_port = os.environ.get("DB_PORT")
-    db_name = os.environ.get("DATABASE")
-    
-    engine = create_engine(f"mysql://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}")
+    log.basicConfig(
+        format="[%(asctime)s][%(levelname)s][%(funcName)s] %(message)s",
+        level=log.DEBUG
+    )
     
     parser = ArgumentParser()
     parser.add_argument("--sleep-interval", type=int, required=False, help="The amount of seconds to sleep after each run")
@@ -111,4 +131,4 @@ if __name__ == "__main__":
     
     Scraper(
         sleep_interval=args.sleep_interval or 300
-    )#.run()
+    ).run()
