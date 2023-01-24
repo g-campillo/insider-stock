@@ -1,4 +1,5 @@
 import os
+import sys
 import logging as log
 from time import sleep
 from argparse import ArgumentParser
@@ -6,10 +7,6 @@ from argparse import ArgumentParser
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
 from requests import get as GET
-from sqlalchemy.exc import IntegrityError
-
-from orm import Trades
-from orm import session
 
 class Scraper:
     
@@ -72,34 +69,19 @@ class Scraper:
             for row in data_rows:
                 table_data = row.findChildren("td")
                 
-                # data_obj = Trades(
-                #     filing_date=self._clean_string(table_data[1].findChildren("a")[0].string),
-                #     trade_date=self._clean_string(table_data[2].findChildren("div")[0].string),
-                #     ticker=self._clean_string(table_data[3].findChildren("a")[0].string),
-                #     company_name=self._clean_string(table_data[4].findChildren("a")[0].string),
-                #     insider_name=self._clean_string(table_data[5].findChildren("a")[0].string),
-                #     insider_title=self._clean_string(table_data[6].string),
-                #     trade_type=self._clean_string(table_data[7].string),
-                #     price=self._clean_string(table_data[8].string),
-                #     qty=self._clean_string(table_data[9].string),
-                #     owned=self._clean_string(table_data[10].string),
-                #     delta_owned= 0 if self._clean_string(table_data[11].string) == "New" else self._clean_string(table_data[11].string),
-                #     value=self._clean_string(table_data[12].string)
-                # )
-                
                 data = {
-                    "filingDate":self._clean_string(table_data[1].findChildren("a")[0].string),
-                    "tradeDate":self._clean_string(table_data[2].findChildren("div")[0].string),
-                    "ticker":self._clean_string(table_data[3].findChildren("a")[0].string),
-                    "companyName":self._clean_string(table_data[4].findChildren("a")[0].string),
-                    "insiderName":self._clean_string(table_data[5].findChildren("a")[0].string),
-                    "insiderTitle":self._clean_string(table_data[6].string),
-                    "tradeType":self._clean_string(table_data[7].string),
-                    "price":self._clean_string(table_data[8].string),
-                    "qty":self._clean_string(table_data[9].string),
-                    "owned":self._clean_string(table_data[10].string),
-                    "deltaOwned": 0 if self._clean_string(table_data[11].string) == "New" else self._clean_string(table_data[11].string),
-                    "value":self._clean_string(table_data[12].string)
+                    "filingDate": table_data[1].findChildren("a")[0].string,
+                    "tradeDate":table_data[2].findChildren("div")[0].string,
+                    "ticker":table_data[3].findChildren("a")[0].string,
+                    "companyName":table_data[4].findChildren("a")[0].string,
+                    "insiderName":table_data[5].findChildren("a")[0].string,
+                    "insiderTitle":table_data[6].string,
+                    "tradeType":table_data[7].string,
+                    "price":table_data[8].string,
+                    "qty":table_data[9].string,
+                    "owned":table_data[10].string,
+                    "deltaOwned": table_data[11].string,
+                    "value":table_data[12].string
                 }
                 agg_data.append(data)
             log.debug(f"Data gathered: {agg_data}")
@@ -111,17 +93,7 @@ class Scraper:
     # stores data directly to the database
     def upload_data(self, data):    
         try:
-            log.info("Uploading data to the database...")
-            session.execute(
-                Trades.__table__
-                .insert()
-                .prefix_with("IGNORE")
-                .values(data)
-            )
-            session.commit()
             log.info("Data successfully uploaded to the database")
-        except IntegrityError as e:
-            log.warning("Duplicate data is being entered, dismissing")
         except Exception as e:
             log.error("An error occurred during data upload")
             log.debug(msg=e, exc_info=True)
@@ -133,6 +105,7 @@ class Scraper:
                 sleep(self.SLEEP_INTERVAL)
         except KeyboardInterrupt:
             log.warning("Program was manually stopped")
+            sys.exit(0)
         except Exception as e:
             log.error("An error occurred in the main loop")
             log.debug(msg=e, exc_info=True)
@@ -142,7 +115,7 @@ if __name__ == "__main__":
     
     log.basicConfig(
         format="[%(asctime)s][%(levelname)s][%(funcName)s] %(message)s",
-        level=log.INFO
+        level=log.DEBUG
     )
     
     parser = ArgumentParser()
