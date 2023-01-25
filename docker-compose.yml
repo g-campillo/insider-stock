@@ -3,6 +3,6 @@ services:
   web_scraper:
     build: .
     container_name: Scraper
-    command: python scraper.py --sleep-interval 60
+    command: python scraper.py --sleep-interval ${ARGS_SLEEP_INTERVAL} --log-level ${ARGS_LOG_LEVEL}
     volumes:
     - ./:/app

@@ -159,6 +159,7 @@ class Scraper:
         try:
             while True:
                 self._send_email(self.get_data())
+                log.info(f"Sleeping: {self.SLEEP_INTERVAL}...")
                 sleep(self.SLEEP_INTERVAL)
         except KeyboardInterrupt:
             log.warning("Program was manually stopped")
@@ -170,15 +171,23 @@ class Scraper:
 if __name__ == "__main__":
     load_dotenv()
     
-    log.basicConfig(
-        format="[%(asctime)s][%(levelname)s][%(funcName)s] %(message)s",
-        level=log.DEBUG
-    )
-    
     parser = ArgumentParser()
     parser.add_argument("--sleep-interval", type=int, required=False, help="The amount of seconds to sleep after each run")
+    parser.add_argument("--log-level", required=True, default="info", choices={"info", "debug"}, help="Sets the log level output")
     
     args = parser.parse_args()
+    
+    log_levels = {
+        "info": log.INFO,
+        "debug": log.DEBUG
+    }
+    
+    log.basicConfig(
+        format="[%(asctime)s][%(levelname)s][%(funcName)s] %(message)s",
+        level=log_levels[args.log_level]
+    )
+    
+    log.info(f"Log level set to {args.log_level}")
     
     Scraper(
         sleep_interval=args.sleep_interval or 300
