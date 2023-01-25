@@ -1,20 +1,21 @@
 <html lang="en">
     <body>
-        {% for data in data_set %}
+        {% for trade in data %}
+            <br>
+            Ticker: {{ trade.ticker }}<br>
+            Company Name: {{ trade.company_name }}<br>
+            Filing Date: {{ trade.filing_date }}<br>
+            Trade Date: {{ trade.trade_date }}<br>
+            Price: {{ trade.price }}<br>
+            Quanitiy: {{ trade.qty }}<br>
+            Value: {{ trade.value }}<br>
+            Owned: {{ trade.owned }}<br>
+            Delta Owned: {{ trade.delta_owned }}<br>
+            Trade Type: {{ trade.trade_type }}<br>
+            Insider Name: {{ trade.insider_name }}<br>
+            Insider Title: {{ trade.insider_title }}<br>
             ------------------------------------------------------
-            Ticker: {{ data.ticker }}<br>
-            Company Name: {{ data.company_name }}<br>
-            Filing Date: {{ data.filing_date }}<br>
-            Trade Date: {{ data.trade_date }}<br>
-            Price: {{ data.price }}<br>
-            Quanitiy: {{ data.qty }}<br>
-            Value: {{ data.value }}<br>
-            Owned: {{ data.owned }}<br>
-            Delta Owned: {{ data.delta_owned }}<br>
-            Trade Type: {{ data.trade_type }}<br>
-            Insider Name: {{ data.insider_name }}<br>
-            Insider Title: {{ data.insider_title }}<br>
-            ------------------------------------------------------
+            <br>
         {% endfor %}
     </body>
 </html>

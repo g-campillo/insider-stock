@@ -143,17 +143,14 @@ class Scraper:
     def _format_data(self, data):
         env = Environment(loader=FileSystemLoader("templates/"))
         template = env.get_template("email_template.j2")
-        res = template.render(data)
-        log.debug(res)
+        return template.render(data=data)
     
     # stores data directly to the database
     def _send_email(self, data):    
         try:
-            self._format_data(data)
-            return
             self.email.send(
                 subject=os.environ.get("EMAIL_SUBJECT"),
-                body=data,
+                body=self._format_data(data),
                 recipients=os.environ.get("EMAIL_RECIPIENTS").split(",")
             )
             log.info("Email was sent!")
