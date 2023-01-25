@@ -53,7 +53,7 @@ class Scraper:
             password=os.environ.get("EMAIL_PASSWORD")
         )
         
-        self.current_data = set()
+        self.current_data = []
     
     # Just in case the request fails
     def _make_request(self):
@@ -110,23 +110,6 @@ class Scraper:
                     "delta_owned": delta_owned,
                     "value": value
                 }
-                
-                # data = [
-                #     f"<br>"
-                #     f"Ticker: {ticker}<br>",
-                #     f"Company name: {companyName}<br>",
-                #     f"Filing date: {filingDate}<br>",
-                #     f"Trade date: {tradeDate}<br>",
-                #     f"Price: {price}<br>",
-                #     f"Quantity: {qty}<br>",
-                #     f"Value: {value}<br>",
-                #     f"Owned: {owned}<br>",
-                #     f"Delta owned: {deltaOwned}<br>",
-                #     f"Trade type: {tradeType}<br>",
-                #     f"Insider Name: {insiderName}<br>",
-                #     f"Insider title: {insiderTitle}<br>",
-                #     "-" * 25
-                # ]
                 agg_data.append(data)
             log.debug(f"Data gathered: {agg_data}")
             return agg_data
@@ -135,12 +118,18 @@ class Scraper:
             log.debug(msg=e, exc_info=True)
     
     def _remove_duplicates(self, data):
-        data = set(data)
-        new_data = data - self.current_data
+        
+        # Since there will only be a max of 100 objects
+        # that were checking for differences, this way 
+        # of checking for those differences is acceptable
+        new_data = []
+        for item in data:
+            if item not in self.current_data:
+                new_data.append(item)
         self.current_data = data
         return new_data
     
-    def _format_data(self, data):
+    def _convert_to_email_format(self, data):
         env = Environment(loader=FileSystemLoader("templates/"))
         template = env.get_template("email_template.j2")
         return template.render(data=data)
@@ -148,12 +137,20 @@ class Scraper:
     # stores data directly to the database
     def _send_email(self, data):    
         try:
-            self.email.send(
-                subject=os.environ.get("EMAIL_SUBJECT"),
-                body=self._format_data(data),
-                recipients=os.environ.get("EMAIL_RECIPIENTS").split(",")
-            )
-            log.info("Email was sent!")
+            
+            # remove duplicate data
+            new_trades = self._remove_duplicates(data)
+            
+            if new_trades:
+                email_body = self._convert_to_email_format(new_trades)
+                self.email.send(
+                    subject=os.environ.get("EMAIL_SUBJECT"),
+                    body=email_body,
+                    recipients=os.environ.get("EMAIL_RECIPIENTS").split(",")
+                )
+                log.info("Email was sent!")
+                return
+            log.info("No new data was found")
         except Exception as e:
             log.error("An error occurred during data upload")
             log.debug(msg=e, exc_info=True)
